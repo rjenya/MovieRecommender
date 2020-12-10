@@ -38,14 +38,16 @@ ratings = read.csv(paste0(myurl, 'ratings.dat?raw=true'),
 colnames(ratings) = c('UserID', 'MovieID', 'Rating', 'Timestamp')
 
 Rmat = createRatingMatrix(ratings)
+
 rec = getUBCFRecommender(Rmat)
+ratedMovieIds <- colnames(Rmat)
 
 shinyServer(function(input, output, session) {
   
   
   # show the movies to be rated
   output$ratings <- renderUI({
-    num_rows <- 100
+    num_rows <- 50
     num_movies <- 6 # movies per row
     
     lapply(1:num_rows, function(i) {
@@ -67,21 +69,28 @@ shinyServer(function(input, output, session) {
                 choices = genres
     )
   })  
+  
+  
   # Calculate recommendations when the sbumbutton is clicked
-  rdf <- eventReactive(input$rbtn, {
-    withBusyIndicatorServer("rbtn", { # showing the busy indicator
+  rdf <- eventReactive(input$btn, {
+    withBusyIndicatorServer("btn", { # showing the busy indicator
       # hide the rating container
       useShinyjs()
       jsCode <- "document.querySelector('[data-widget=collapse]').click();"
       runjs(jsCode)
-      
+
       # get the user's rating data
       value_list <- reactiveValuesToList(input)
       user_ratings <- get_user_ratings(value_list)
-      print(user_ratings)
+      #print(user_ratings)
       
-      predictRecom(user_ratings,Rmat,rec,movies)
-      
+      if (nrow(user_ratings) > 0) {
+        ids = predictRecom(user_ratings, ratedMovieIds, rec)
+        #print(ids)
+        movies %>% 
+          filter(MovieID %in% ids) %>%
+          select(c( "MovieID","Title")) 
+      }
     }) # still busy
     
   }) # clicked on button
@@ -89,12 +98,6 @@ shinyServer(function(input, output, session) {
   # Calculate recommendations when the sbumbutton is clicked
   gdf <- eventReactive(input$gbtn, {
     withBusyIndicatorServer("gbtn", { # showing the busy indicator
-      # hide the rating container
-      useShinyjs()
-      jsCode <- "document.querySelector('[data-widget=collapse]').click();"
-      runjs(jsCode)
-      
-      print(input$genres_select)
       moviesByGenre =  movies %>% 
         filter( grepl(input$genres_select,Genres))
       tmp = ratings %>% 
@@ -117,30 +120,31 @@ shinyServer(function(input, output, session) {
     num_rows <- 2
     num_movies <- 5
     recom_result <- rdf()
-    print(recom_result)
-    
-    lapply(1:num_rows, function(i) {
-      list(fluidRow(lapply(1:num_movies, function(j) {
-        box(width = 2, status = "success", solidHeader = TRUE, title = paste0("Rank ", (i - 1) * num_movies + j),
-            
-            div(style = "text-align:center", 
-                a(img(src = movies[movies$MovieID == recom_result$MovieID[(i - 1) * num_movies + j],]$image_url, height = 150))
-            ),
-            div(style="text-align:center; font-size: 100%", 
-                strong(recom_result$Title[(i - 1) * num_movies + j])
-            )
-            
-        )        
-      }))) # columns
-    }) # rows
-    
+    if (is.null(recom_result)) {
+      print("No recommendations. Please, rate at least one movie." )
+    } else {
+      lapply(1:num_rows, function(i) {
+        list(fluidRow(lapply(1:num_movies, function(j) {
+          box(width = 2, status = "success", solidHeader = TRUE, title = paste0("Rank ", (i - 1) * num_movies + j),
+              
+              div(style = "text-align:center", 
+                  a(img(src = movies[movies$MovieID == recom_result$MovieID[(i - 1) * num_movies + j],]$image_url, height = 150))
+              ),
+              div(style="text-align:center; font-size: 100%", 
+                  strong(recom_result$Title[(i - 1) * num_movies + j])
+              )
+              
+          )        
+        }))) # columns
+
+     }) # rows
+    }
   }) # renderUI function
   
   output$resultsByGenre <- renderUI({
     num_rows <- 2
     num_movies <- 5
     grecom_result <- gdf()
-    print(grecom_result)
     lapply(1:num_rows, function(i) {
       list(fluidRow(lapply(1:num_movies, function(j) {
         box(width = 2, status = "success", solidHeader = TRUE, title = paste0("Rank ", (i - 1) * num_movies + j),

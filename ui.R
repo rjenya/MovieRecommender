@@ -24,7 +24,7 @@ rating.tab = tabItem(tabName = "ratingsTab",
                          title = "Step 2: Discover movies you might like",
                          br(),
                          withBusyIndicatorUI(
-                           actionButton("rbtn", "Click here to get your recommendations", class = "btn-warning")
+                           actionButton("btn", "Click here to get your recommendations", class = "btn-warning")
                          ),
                          br(),
                          tableOutput("results")
@@ -34,7 +34,7 @@ rating.tab = tabItem(tabName = "ratingsTab",
 genre.tab = tabItem(tabName = "genreTab",
                      h2("Recommender by Genre"),
                     fluidRow(
-                      box(width = 12, title = "Step 1: Select Genre", status = "info", solidHeader = TRUE, collapsible = TRUE,
+                      box(width = 12, title = "Step 1: Select Genre", status = "info", solidHeader = TRUE, collapsible = FALSE,
                           uiOutput("genres_dropdown"),
                       )
                     ),

@@ -33,8 +33,7 @@ getIBCFRecommender = function(Rmat) {
                                k = 30))
 }
 
-predictRecom = function(user_ratings,Rmat,rec,movies) {
-  movieCols = colnames(Rmat)
+predictRecom = function(user_ratings, movieCols, rec) {
   i = rep('u0', length(movieCols))
   j = movieCols
   x = rep(0, length(movieCols))
@@ -42,18 +41,17 @@ predictRecom = function(user_ratings,Rmat,rec,movies) {
   URmat = sparseMatrix(as.integer(tmp$i), as.integer(tmp$j), x = tmp$x)
   colnames(URmat) = movieCols
   for (u in 1:nrow(user_ratings)){
-    URmat[1,paste0('m',user_ratings[u,]$MovieID)] = user_ratings[u,]$Rating
-    print(user_ratings[u,]$MovieID)
+    colName = paste0('m',user_ratings[u,]$MovieID)
+    if (is.element(colName, movieCols)) { #rated movie
+      URmat[1,colName] = user_ratings[u,]$Rating
+    }
   }
   URmat = new('realRatingMatrix', data = URmat)  
   recom = predict(rec, 
                   URmat, type = 'ratings')  
   rec_list = as(recom, 'list')
-  print(rec_list)
+  #print(rec_list)
   selected = names(tail(sort(rec_list[[1]]),10))
   ids = as.integer(substring(selected,2))
-  print(ids)
-  movies %>% 
-    filter(MovieID %in% ids) %>%
-    select(c( "MovieID","Title")) 
+  ids
 }

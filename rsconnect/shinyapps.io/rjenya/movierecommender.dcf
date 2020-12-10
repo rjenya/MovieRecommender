@@ -1,0 +1,10 @@
+name: movierecommender
+title:
+username:
+account: rjenya
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 3370500
+bundleId: 3969462
+url: https://rjenya.shinyapps.io/movierecommender/
+when: 1607582326.49869
